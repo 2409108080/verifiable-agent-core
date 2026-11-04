@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include MANIFEST.sha256
+include .gitattributes
+recursive-include adapters *.py
+recursive-include contrib *.py *.md
+recursive-include examples *.py *.md *.csv
+recursive-include tests *.py
+recursive-include tools *.py
+recursive-include .github *.yml

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "verifiable-agent-core"
+version = "0.1.2"
+description = "Experimental (0.1.2). A ~600-line physical gate that makes an agent's 'I wrote it' fail loudly unless the bytes are really on disk; delivery contract is developer-only, immutable, and refuses empty, zero-width-only or placeholder files"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Verifiable-Agent-Core Contributors" }]
+keywords = ["agent", "llm", "verification", "delivery", "atomic-write", "guardrail"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+langchain = ["langchain-core>=0.2"]
+llamaindex = ["llama-index-core>=0.11"]
+crewai = ["crewai>=0.30"]
+autogen = ["autogen-core>=0.4"]
+mcp = ["mcp>=1.0"]
+openai = ["openai>=1.30"]
+all = ["langchain-core>=0.2", "llama-index-core>=0.11", "crewai>=0.30",
+       "autogen-core>=0.4", "mcp>=1.0", "openai>=1.30"]
+
+[project.urls]
+Homepage = "https://github.com/2409108080/verifiable-agent-core"
+Issues = "https://github.com/2409108080/verifiable-agent-core/issues"
+
+[tool.setuptools]
+packages = ["vac"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+ignore = ["E501"]

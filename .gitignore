@@ -1,0 +1,12 @@
+# 工作区是跑出来的，不入库
+workspace/
+examples/out/
+*.part
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
