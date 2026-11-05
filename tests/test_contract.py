@@ -234,13 +234,22 @@ except Exception as e:
 
 
 def _probe_adapter(tmp_path, env_extra: dict) -> subprocess.CompletedProcess:
-    """在干净的子进程里 import 适配器 —— 模块一导入就封印契约，只能这么测。"""
+    """在干净的子进程里 import 适配器 —— 模块一导入就封印契约，只能这么测。
+
+    子进程会往 stdout/stderr 写中文，所以这里**显式规定 UTF-8**，不等宿主机
+    locale：Windows 的默认控制台代码页（en-US 是 cp1252）编不出中文，子进程会在
+    print 那一行抛 UnicodeEncodeError、返回码变 1 —— 于是一条「适配器读不读
+    环境变量」的测试，会因为在英文版 Windows 上跑而红。判据不能依赖宿主机的
+    代码页，那跟被测行为一点关系都没有。
+    """
     env = {k: v for k, v in os.environ.items() if not k.startswith("VAC_")}
     env.update(env_extra)
     env["PYTHONPATH"] = str(ROOT)
+    env["PYTHONIOENCODING"] = "utf-8"      # 子进程的 stdout/stderr 一律 UTF-8
     return subprocess.run(
         [sys.executable, "-c", _ADAPTER_PROBE.format(content="短\\n")],
-        cwd=tmp_path, env=env, capture_output=True, text=True)
+        cwd=tmp_path, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
 
 
 def test_adapter_reads_min_limits_from_env(tmp_path):
@@ -344,10 +353,15 @@ def test_end_task_is_the_only_way_to_open_the_gate(tmp_path):
 
 
 def _manifest_check(root: Path) -> int:
-    """跑一遍仓库自带的清单校验器，返回退出码。用子进程，模拟使用者怎么用它。"""
+    """跑一遍仓库自带的清单校验器，返回退出码。用子进程，模拟使用者怎么用它。
+
+    同 `_probe_adapter`：校验器会打印中文，这里显式 UTF-8，不靠宿主机的代码页。
+    """
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
     return subprocess.run(
         [sys.executable, str(ROOT / "tools" / "check_manifest.py"), str(root)],
-        capture_output=True, text=True).returncode
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=env).returncode
 
 
 # P0：CRLF 检出导致清单整份失配

@@ -1,14 +1,49 @@
-> ⚠️ **V0.1.2（实验性）**：连 1.0 都还没到。四道闸可用，但多进程并发、跨机器、非 `write_file` 通道这些边界都没解决 —— 先看下一节再决定要不要用。
-
 # Verifiable-Agent-Core
 
-**一个 600 余行的物理闸：让 Agent 的「我写好了」变成「盘上真的在，而且逐字节对得上」。**
+[![test](https://github.com/2409108080/verifiable-agent-core/actions/workflows/test.yml/badge.svg)](https://github.com/2409108080/verifiable-agent-core/actions/workflows/test.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/2409108080/verifiable-agent-core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-不依赖任何框架，不调模型，不用配 Key。`import` 就能用。
+**A ~600-line delivery gate for agents. It turns "I wrote it" from a self-report into a call that can fail.**
+
+No framework. No model calls. No API key. Standard library only. `import` and go.
+
+> 你让 agent 跑一晚上交文件，第二天早上打开文件夹，里面应该只有你要的那几份东西。
+> 名字不对、内容是空壳、只有零宽字符、旧账被空壳覆盖 —— 四种都在写入路径上被拒。
+> **拒了那一次，盘上一个字节都没动。**
+
+```bash
+pip install verifiable-agent-core     # 不是 `vac`：那个名字是别人的包
+```
+
+```python
+from vac import Workspace, WriteRefused
+
+ws = Workspace("work", required_files=["report.md", "summary.csv"])   # 名单只由部署方给
+
+ws.write_and_verify("report.md", "# 本周复盘\n\n总作品 25 件。\n")   # → Receipt(verified=True)
+ws.verify_all_delivered()                                             # False：还欠 summary.csv
+ws.write_and_verify("README_final.md", "...")                         # → WriteRefused(delivery)
+```
+
+## 边界：它只挡一个动词
+
+**`write_file`。** 只要它是你给 Agent 的唯一落盘路径，这把锁就是闭合的 —— 名字不对、
+内容空、旧账被空壳盖掉，都在调用返回之前被拒，模型只能拿着拒绝理由改对再来。
+
+**如果 Agent 还有第二条落盘的路，本库既拦不住也看不见**：shell、代码沙箱、浏览器下载、
+你自己加的文件工具、同一个 MCP 里另挂的文件系统 server，都算。这不是藏起来的缺陷，是
+适用范围 —— **接线只接一个写口，闸才叫闸；接了两个，另外那个就是正门。**
+
+同理，它不判断内容对不对：四段「待补充」凑够 `min_bytes`，四道闸全绿。下限保证的是
+「像份东西」，不是「东西对」——**那是评分器的活，别指望闸替你判对错。**
+
+> ⚠️ **V0.1.3（实验性）**：连 1.0 都还没到。四道闸可用，但多进程并发、跨机器、
+> 第二条写入路径这些边界都没解决 —— 先看完这一节再决定要不要用。
 
 ---
 
-## 它不做什么（先看这个，再决定用不用）
+## 它不做什么（逐条，别跳）
 
 - **不提高模型能力。** 它只在交付这一环设卡。推理错了、数据算错了，它拦不住。
 - **不管思考过程。** 没有规划器、没有记忆、没有反思循环。那些是 Agent 框架的事。
@@ -390,6 +425,25 @@ judge_3state({"ok": 1}).state # "unknown"  ← 1 == True，但不是 bool，不�
 
 `allow_shrink` 只关「防误删」这一道：空内容、交付契约、读回校验照样立着。
 它是给部署方的，不是给模型的 —— 模型手里没有构造 `Workspace` 的参数。
+
+---
+
+## 0.1.3：一个红叉 + 第一屏（代码一行没动）
+
+0.1.2 之后没有改判据、没有加闸。这一版只修「别人能不能用上」：
+
+| 事 | 0.1.2 | 0.1.3 |
+|---|---|---|
+| Windows CI | 九个 job 里三个永远红 | 绿。根因不是代码：测试里的子进程会往 stdout 打中文，而 en-US 的 Windows 控制台代码页是 cp1252，编不出来直接把进程打挂。workflow 顶层加 `PYTHONUTF8=1`，两处 `subprocess.run` 显式 `encoding="utf-8"` |
+| 第一屏 | 24KB 中文长文，第一行是警告 | 英文一句 + 30 秒示例 + **边界写在门口**（只挡 `write_file` 一个动词） |
+| 发现路径 | 无 description / topics，未发 PyPI | 元数据补齐，`publish.yml` 用 OIDC 发版，不存 token |
+| 清单 | `MANIFEST.sha256` 只在提交者本地对得上 | 改文件必重算（这次就重算了两次） |
+
+**判据没变的证据**：60 项测试在 UTF-8 和 cp1252 两种环境下都是全绿；
+`examples/bench.py` 两种都跑得出来；四道闸的代码一个字没改。
+
+这也算一次自我验收：一个专治「声称」的库，改了文档就得把清单重算、把 CI 跑绿，
+否则它自己就在犯它要治的病。
 
 ---
 

@@ -4,6 +4,15 @@ on:
   push:
   pull_request:
 
+# 全家都用 UTF-8 跑。这不是洁癖：三个 job 之前永远在 windows-latest 上红，
+# 原因是 examples/bench.py 和测试里的子进程都会往 stdout 打中文，而 en-US 的
+# Windows 控制台代码页是 cp1252 —— 编不出来的字符会直接把进程打挂（返回码 1），
+# 于是「跑个 demo」这一步看起来像代码坏了。代码没坏，代码页坏了。
+# 判据不该依赖跑它的那台机器是哪个语言版本。
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: "utf-8"
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
