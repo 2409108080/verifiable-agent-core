@@ -43,7 +43,7 @@ from .verdict import (
     judge_3state,
 )
 
-__version__ = "0.1.2"
+__version__ = "0.1.4"
 
 __all__ = [
     "ENV_DELIVERY",
